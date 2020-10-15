@@ -3,24 +3,22 @@
  * for each node executes a callback function
  * @param startNode node from which to start walking
  * @param linkName property name that contains the linked node
- * @param callbackEach function executed for each node, is passed the current node and the return value of the previous callbackEach
- * @param callbackRoot (optional) function executed for root node only, is passed the root node and the return value of the previous callbackEach
+ * @param callback function executed for each node, is passed the current node and the return value of the previous callback
  */
-export function walkCall<L extends string, T extends { L: T }>(
+export function walkCall<L extends string, T extends { L: T }, V>(
     startNode: T,
     linkName: L,
-    callbackEach: (node: T, lastValue: any) => any,
-    callbackRoot?: (node: T, lastValue: any) => any
-): void {
+    callback: (node: T, lastValue: V) => V
+): V {
     function recursion(node, lastValue) {
-        const returnValue = callbackEach(node, lastValue);
+        const returnValue = callback(node, lastValue);
         if (node[linkName]) {
-            recursion(node[linkName], returnValue);
+            return recursion(node[linkName], returnValue);
         } else {
-            callbackRoot(node, returnValue);
+            return returnValue;
         }
     }
-    recursion(startNode, undefined);
+    return recursion(startNode, undefined);
 }
 
 /**
