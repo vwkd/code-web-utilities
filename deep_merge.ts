@@ -1,7 +1,7 @@
 /**
  * Simple deep merge of two objects
- * Returns new object with source merged into target
- * Two arrays are concatenated, two objects again deep merged, for anything else source overwrites target
+ * Merges source into target, source overwrites target
+ * Returns new object, doesn't mutate inputs
  * beware: doesn't consider non-enumberable properties, prototype properties, circular dependencies, getter / setter, symbol keys, etc.
  */
 export function deepMerge(target: any, source: any) {
