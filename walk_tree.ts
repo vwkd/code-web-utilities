@@ -1,86 +1,79 @@
-/**
- * Walks up chain of linked nodes
- * for each node executes a callback function
- * @param startNode node from which to start walking
- * @param linkName property name that contains the linked node
- * @param callback function executed for each node, is passed the current node and the return value of the previous callback
- */
-export function walkChainCall<L extends string, T extends { L: T }, V>(
-    startNode: T,
-    linkName: L,
-    callback: (node: T, lastValue: V) => V
-): V {
-    function recursion(node, lastValue) {
-        const returnValue = callback(node, lastValue);
-        if (node[linkName]) {
-            return recursion(node[linkName], returnValue);
-        } else {
-            return returnValue;
-        }
-    }
-    return recursion(startNode, undefined);
-}
+type Tree = {
+    [index: string]: Tree;
+};
 
 /**
- * Walks up chain of linked nodes
- * merges the specified property over all linked nodes, earlier from start node overwrite later towards root note
- * @param startNode node from which to start walking
- * @param linkName property name that contains the linked node
- * @param propertyName property name that is shallow merged
- * @param mergeFunction function that merges two properties, e.g. shallowMerge, deepMerge, etc.
- * @returns copy of the merged property, doesn't mutate nodes
+ * Walks down a tree
+ * For each node in tree executes a callback function.
+ * The argument of the callback function is the node that it is executed on and its key
+ * @param tree tree to walk down
+ * @param callback callback function to execute for each node
  */
-export function walkChainMerge<
-    L extends string,
-    M extends string,
-    U extends unknown,
-    T extends { L: T; M: U }
->(startNode: T, linkName: L, propertyName: M, mergeFunction: (a: U, b: U) => U): U {
-    function recursion(node) {
-        const localProperty = node[propertyName];
-        return node[linkName]
-            ? mergeFunction(recursion(node[linkName]), localProperty)
-            : localProperty;
-    }
-
-    return recursion(startNode);
-}
-
-/**
- * Walks down two trees and compares them.
- * For each node in tree one that is not in tree two a callback function is executed.
- * @param tree1 tree one
- * @param tree2 tree two
- * @param callbackIfDifferent callback function
- */
-export function walkTreeCompare(tree1, tree2, callbackIfDifferent) {
-    Object.keys(tree1).forEach(node1 => {
-        // same node in the tree two
-        const node2 = tree2[node1];
-
-        // good, this one exists, but what about the children?
-        if (node2) {
-            walkTreeCompare(node1, node2, callbackIfDifferent);
-        }
-
-        // bad, this one doesn't exist
-        else {
-            callbackIfDifferent(node1);
-            // all child nodes don't exist as well
-            walkTreeCall(node1, callbackIfDifferent);
-        }
+// return only for tail call optimisation
+export function walkTreeCall(tree: Tree, callback: (tree: Tree, key: string) => void): void {
+    return Object.keys(tree).forEach(nodeName => {
+        const node = tree[nodeName];
+        callback(node, nodeName);
+        walkTreeCall(node, callback);
     });
 }
 
 /**
  * Walks down a tree
- * For each node in tree executes a callback function.
+ * For each leaf node in tree executes a callback function.
+ * The argument of the callback function is the node that it is executed on and its key
  * @param tree tree to walk down
- * @param callback callback function to execute for each node
+ * @param callback callback function to execute for each leaf node
+ * @param treeName key of tree (optional, needs only internally for recursion)
  */
-export function walkTreeCall(tree, callback) {
-    Object.keys(tree).forEach(node => {
-        callback(node);
-        walkTreeCall(node, callback);
+// return only for tail call optimisation
+export function walkTreeLeafCall(tree: Tree, callback: (tree: Tree, key: string) => void, treeName?: string): void {
+    const nodeNames = Object.keys(tree);
+
+    // has children
+    if (nodeNames.length > 0) {
+        return nodeNames.forEach(nodeName => {
+            walkTreeLeafCall(tree[nodeName], callback, nodeName);
+        });
+    }
+
+    // has no children, i.e. is leaf
+    else {
+        return callback(tree, treeName);
+    }
+}
+
+/**
+ * Walks down two trees and compares them.
+ * For each node in tree one that is not in tree two executes a callback function.
+ * The argument of the callback function is the node that it is executed on and its key
+ * @param tree1 tree one to walk down
+ * @param tree2 tree two to compare with
+ * @param callbackIfDifferent callback function to execute for each node in tree one that is not in tree two
+ * @param leafOnly true if callback function is only executed on leaf nodes of subtree
+ */
+// return only for tail call optimisation
+export function walkTreeCompare(tree1, tree2, callbackIfDifferent, leafOnly) {
+    Object.keys(tree1).forEach(node1Key => {
+        // same node in tree two
+        const node2 = tree2[node1Key];
+        // actual node in tree one
+        const node1 = tree1[node1Key];
+
+        // good, this one exists, but what about the children?
+        if (node2) {
+            return walkTreeCompare(node1, node2, callbackIfDifferent, leafOnly);
+        }
+
+        // bad, this one doesn't exist
+        else {
+            if (leafOnly) {
+                return walkTreeLeafCall(node1, callbackIfDifferent);
+            } else {
+                callbackIfDifferent(node1, node1Key);
+                // all child nodes don't exist as well
+                return walkTreeCall(node1, callbackIfDifferent);
+            }
+        }
     });
 }
