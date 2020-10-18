@@ -5,7 +5,7 @@
  * @param linkName property name that contains the linked node
  * @param callback function executed for each node, is passed the current node and the return value of the previous callback
  */
-export function walkCall<L extends string, T extends { L: T }, V>(
+export function walkChainCall<L extends string, T extends { L: T }, V>(
     startNode: T,
     linkName: L,
     callback: (node: T, lastValue: V) => V
@@ -30,7 +30,7 @@ export function walkCall<L extends string, T extends { L: T }, V>(
  * @param mergeFunction function that merges two properties, e.g. shallowMerge, deepMerge, etc.
  * @returns copy of the merged property, doesn't mutate nodes
  */
-export function walkMerge<
+export function walkChainMerge<
     L extends string,
     M extends string,
     U extends unknown,
@@ -44,4 +44,43 @@ export function walkMerge<
     }
 
     return recursion(startNode);
+}
+
+/**
+ * Walks down two trees and compares them.
+ * For each node in tree one that is not in tree two a callback function is executed.
+ * @param tree1 tree one
+ * @param tree2 tree two
+ * @param callbackIfDifferent callback function
+ */
+export function walkTreeCompare(tree1, tree2, callbackIfDifferent) {
+    Object.keys(tree1).forEach(node1 => {
+        // same node in the tree two
+        const node2 = tree2[node1];
+
+        // good, this one exists, but what about the children?
+        if (node2) {
+            walkTreeCompare(node1, node2, callbackIfDifferent);
+        }
+
+        // bad, this one doesn't exist
+        else {
+            callbackIfDifferent(node1);
+            // all child nodes don't exist as well
+            walkTreeCall(node1, callbackIfDifferent);
+        }
+    });
+}
+
+/**
+ * Walks down a tree
+ * For each node in tree executes a callback function.
+ * @param tree tree to walk down
+ * @param callback callback function to execute for each node
+ */
+export function walkTreeCall(tree, callback) {
+    Object.keys(tree).forEach(node => {
+        callback(node);
+        walkTreeCall(node, callback);
+    });
 }
