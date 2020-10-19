@@ -3,9 +3,9 @@ type Tree = {
 };
 
 /**
- * Walks down a tree
+ * Walks down a tree.
  * For each node in tree executes a callback function.
- * The argument of the callback function is the node that it is executed on and its key
+ * The argument of the callback function is the node that it is executed on and its key.
  * @param tree tree to walk down
  * @param callback callback function to execute for each node
  */
@@ -19,9 +19,9 @@ export function walkTreeCall(tree: Tree, callback: (tree: Tree, key: string) => 
 }
 
 /**
- * Walks down a tree
+ * Walks down a tree.
  * For each leaf node in tree executes a callback function.
- * The argument of the callback function is the node that it is executed on and its key
+ * The argument of the callback function is the node that it is executed on and its key.
  * @param tree tree to walk down
  * @param callback callback function to execute for each leaf node
  * @param treeName key of tree (optional, needs only internally for recursion)
@@ -46,7 +46,7 @@ export function walkTreeLeafCall(tree: Tree, callback: (tree: Tree, key: string)
 /**
  * Walks down two trees and compares them.
  * For each node in tree one that is not in tree two executes a callback function.
- * The argument of the callback function is the node that it is executed on and its key
+ * The argument of the callback function is the node that it is executed on and its key.
  * @param tree1 tree one to walk down
  * @param tree2 tree two to compare with
  * @param callbackIfDifferent callback function to execute for each node in tree one that is not in tree two
