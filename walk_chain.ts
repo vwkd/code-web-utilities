@@ -32,22 +32,25 @@ type NodeIdMerge = {
  * For each node executes a callback function.
  * @param startNode node from which to start walking
  * @param linkName property name that contains the linked node
- * @param callback function executed for each node, is passed the current node and the return value of the previous callback
+ * @param callback function executed for each node, is passed the current node, the return value of the previous callback, and the data argument
+ * @param data optional argument passed through to every callback function
  * @returns return value of last callback
  */
 export function walkChainCall<U extends unknown>({
     startNode,
     linkName,
-    callback
+    callback,
+    data
 }: {
     startNode: Node;
     linkName: string;
-    callback: (node: Node, lastValue: U) => U;
+    callback: (node: Node, lastValue: U, data: Prop) => U;
+    data?: Prop;
 }): U {
-    function recursion(node, lastValue, visitedNodes) {
+    function recursion(node, lastValue, visitedNodes, data) {
         visitedNodes.push(node);
 
-        const returnValue = callback(node, lastValue);
+        const returnValue = callback(node, lastValue, data);
         const nextNode = node[linkName];
 
         // found a cyclical dependency, exit
@@ -55,9 +58,9 @@ export function walkChainCall<U extends unknown>({
             return returnValue;
         }
 
-        return nextNode ? recursion(nextNode, returnValue, visitedNodes) : returnValue;
+        return nextNode ? recursion(nextNode, returnValue, visitedNodes, data) : returnValue;
     }
-    return recursion(startNode, undefined, []);
+    return recursion(startNode, undefined, [], data);
 }
 
 /**
@@ -104,7 +107,8 @@ export function walkChainMerge({
  * @param nodeList list in which to search for the linked node
  * @param linkName property name that contains ID of linked node
  * @param idName property name that contains ID of a node
- * @param callback function executed for each node, is passed the current node and the return value of the previous callback
+ * @param callback function executed for each node, is passed the current node, the return value of the previous callback, and the data argument
+ * @param data optional argument passed through to every callback function
  * @returns return value of last callback
  * Note: the value of `idName` of nodes in the `nodeList` is assumed to be unique.
  */
@@ -113,18 +117,20 @@ export function walkChainIdCall<U extends unknown>({
     nodeList,
     linkName,
     idName,
-    callback
+    callback,
+    data
 }: {
     startNode: NodeId;
     nodeList: NodeId[];
     linkName: string;
     idName: string;
-    callback: (node: NodeId, lastValue: U) => U;
+    callback: (node: NodeId, lastValue: U, data: Prop) => U;
+    data?: Prop
 }): U {
-    function recursion(node, lastValue, visitedNodes) {
+    function recursion(node, lastValue, visitedNodes, data) {
         visitedNodes.push(node);
 
-        const returnValue = callback(node, lastValue);
+        const returnValue = callback(node, lastValue, data);
 
         // otherwise find() will return the next node without an idName
         if (node[linkName] == undefined) {
@@ -139,10 +145,10 @@ export function walkChainIdCall<U extends unknown>({
             return returnValue;
         }
 
-        return nextNode ? recursion(nextNode, returnValue, visitedNodes) : returnValue;
+        return nextNode ? recursion(nextNode, returnValue, visitedNodes, data) : returnValue;
     }
 
-    return recursion(startNode, undefined, []);
+    return recursion(startNode, undefined, [], data);
 }
 
 /**
