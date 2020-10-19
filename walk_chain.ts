@@ -44,12 +44,20 @@ export function walkChainCall<U extends unknown>({
     linkName: string;
     callback: (node: Node, lastValue: U) => U;
 }): U {
-    function recursion(node, lastValue) {
+    function recursion(node, lastValue, visitedNodes) {
+        visitedNodes.push(node);
+
         const returnValue = callback(node, lastValue);
         const nextNode = node[linkName];
-        return nextNode ? recursion(node[linkName], returnValue) : returnValue;
+
+        // found a cyclical dependency, exit
+        if (visitedNodes.includes(nextNode)) {
+            return returnValue;
+        }
+
+        return nextNode ? recursion(nextNode, returnValue, visitedNodes) : returnValue;
     }
-    return recursion(startNode, undefined);
+    return recursion(startNode, undefined, []);
 }
 
 /**
@@ -72,13 +80,21 @@ export function walkChainMerge({
     mergeProperty: string;
     mergeFunction: (nodeOne: Prop, nodeTwo: Prop) => Prop;
 }): Prop {
-    function recursion(node) {
+    function recursion(node, visitedNodes) {
+        visitedNodes.push(node);
+
         const localProperty = node[mergeProperty];
         const nextNode = node[linkName];
-        return nextNode ? mergeFunction(recursion(nextNode), localProperty) : localProperty;
+
+        // found a cyclical dependency, exit
+        if (visitedNodes.includes(nextNode)) {
+            return localProperty;
+        }
+
+        return nextNode ? mergeFunction(recursion(nextNode, visitedNodes), localProperty) : localProperty;
     }
 
-    return recursion(startNode);
+    return recursion(startNode, []);
 }
 
 /**
@@ -105,7 +121,9 @@ export function walkChainIdCall<U extends unknown>({
     idName: string;
     callback: (node: NodeId, lastValue: U) => U;
 }): U {
-    function recursion(node, lastValue) {
+    function recursion(node, lastValue, visitedNodes) {
+        visitedNodes.push(node);
+
         const returnValue = callback(node, lastValue);
 
         // otherwise find() will return the next node without an idName
@@ -116,10 +134,15 @@ export function walkChainIdCall<U extends unknown>({
         // can choose first match because value of idName of nodes in nodeList is unique
         const nextNode = nodeList.find(nd => nd[idName] == node[linkName]);
 
-        return nextNode ? recursion(nextNode, returnValue) : returnValue;
+        // found a cyclical dependency, exit
+        if (visitedNodes.includes(nextNode)) {
+            return returnValue;
+        }
+
+        return nextNode ? recursion(nextNode, returnValue, visitedNodes) : returnValue;
     }
 
-    return recursion(startNode, undefined);
+    return recursion(startNode, undefined, []);
 }
 
 /**
@@ -149,10 +172,12 @@ export function walkChainIdMerge({
     mergeProperty: string;
     mergeFunction: (nodeOne: Prop, nodeTwo: Prop) => Prop;
 }): Prop {
-    function recursion(node) {
+    function recursion(node, visitedNodes) {
+        visitedNodes.push(node);
+
         const localProperty = node[mergeProperty];
 
-        // no link WHAT TO DO
+        // otherwise find() will return the next node without an idName
         if (node[linkName] == undefined) {
             return localProperty;
         }
@@ -160,8 +185,13 @@ export function walkChainIdMerge({
         // can choose first match because value of idName of nodes in nodeList is unique
         const nextNode = nodeList.find(nd => nd[idName] == node[linkName]);
 
-        return nextNode ? mergeFunction(recursion(nextNode), localProperty) : localProperty;
+        // found a cyclical dependency, exit
+        if (visitedNodes.includes(nextNode)) {
+            return localProperty;
+        }
+
+        return nextNode ? mergeFunction(recursion(nextNode, visitedNodes), localProperty) : localProperty;
     }
 
-    return recursion(startNode);
+    return recursion(startNode, []);
 }
