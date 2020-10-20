@@ -5,12 +5,12 @@
  * beware: doesn't consider non-enumberable properties, prototype properties, etc.
  * beware: differs from pure Object.assign() because doesn't merge array + object OR object + array
  */
-export function shallowMerge(target: any, source: any) {
-    function isObjectOrArray(obj: any): obj is { [index: string]: any } {
+export function shallowMerge(target: unknown, source: unknown) {
+    function isObjectOrArray(obj: unknown): obj is { [index: string]: unknown } {
         return obj && typeof obj === "object";
     }
 
-    function isArray(obj: any): obj is any[] {
+    function isArray(obj: unknown): obj is unknown[] {
         return Array.isArray(obj);
     }
 
@@ -30,4 +30,13 @@ export function shallowMerge(target: any, source: any) {
         // scalar + scalar OR object + scalar OR scalar + object
         return source;
     }
+}
+
+/**
+ * Shallow merge for multiple objects
+ */
+export function shallowMergeArr(target: unknown, ...source: unknown[]) {
+    const [first, ...rest] = source;
+    const res = shallowMerge(target, first)
+    return rest.length > 0 ? shallowMergeArr(res, ...rest) : res;
 }

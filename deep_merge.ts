@@ -4,16 +4,16 @@
  * Returns new object, doesn't mutate inputs
  * beware: doesn't consider non-enumberable properties, prototype properties, circular dependencies, getter / setter, symbol keys, etc.
  */
-export function deepMerge(target: any, source: any) {
-    function isObjectOrArray(obj: any): obj is {[index: string]: any} {
+export function deepMerge(target: unknown, source: unknown) {
+    function isObjectOrArray(obj: unknown): obj is {[index: string]: unknown} {
         return obj && typeof obj === "object";
     }
 
-    function isArray(obj: any): obj is any[] {
+    function isArray(obj: unknown): obj is unknown[] {
         return Array.isArray(obj);
     }
 
-    function recursiveMerge(target: any, source: any) {
+    function recursiveMerge(target: unknown, source: unknown) {
         if (isArray(target) && isArray(source)) {
             // array + array
             return target.concat(source);
@@ -39,4 +39,13 @@ export function deepMerge(target: any, source: any) {
     }
 
     return recursiveMerge(target, source);
+}
+
+/**
+ * Deep merge for multiple objects
+ */
+export function deepMergeArr(target: unknown, ...source: unknown[]) {
+    const [first, ...rest] = source;
+    const res = deepMerge(target, first)
+    return rest.length > 0 ? deepMergeArr(res, ...rest) : res;
 }
