@@ -1,30 +1,23 @@
 // ToDo: computed property name in TypeScript? Because linkName, mergeProperty, idName aren't correct, actual value is only known at runtime... Probably not possible?!
+
 type Node = {
     linkName: Node;
-    [index: string]: unknown;
-};
-
-type Prop = {
-    [index: string]: unknown;
 };
 
 type NodeMerge = {
     linkName: NodeMerge;
-    mergeProperty: Prop;
-    [index: string]: unknown;
+    mergeProperty: unknown;
 };
 
 type NodeId = {
     linkName: string;
     idName: string;
-    [index: string]: unknown;
 };
 
 type NodeIdMerge = {
     linkName: string;
     idName: string;
-    mergeProperty: Prop;
-    [index: string]: unknown;
+    mergeProperty: unknown;
 };
 
 /**
@@ -44,8 +37,8 @@ export function walkChainCall<U extends unknown>({
 }: {
     startNode: Node;
     linkName: string;
-    callback: (node: Node, lastValue: U, data: Prop) => U;
-    data?: Prop;
+    callback: (node: Node, lastValue: U, data: unknown) => U;
+    data?: unknown;
 }): U {
     function recursion(node, lastValue, visitedNodes, data) {
         visitedNodes.push(node);
@@ -72,6 +65,7 @@ export function walkChainCall<U extends unknown>({
  * @param mergeFunction function that merges two properties, e.g. shallowMerge, deepMerge, etc.
  * @returns copy of the merged property, doesn't mutate nodes
  */
+// todo: make tail call recursive
 export function walkChainMerge({
     startNode,
     linkName,
@@ -81,19 +75,23 @@ export function walkChainMerge({
     startNode: NodeMerge;
     linkName: string;
     mergeProperty: string;
-    mergeFunction: (nodeOne: Prop, nodeTwo: Prop) => Prop;
-}): Prop {
+    mergeFunction: (nodeOne: unknown, nodeTwo: unknown) => unknown;
+}): unknown {
     function recursion(node, visitedNodes) {
+        // record visited node for cyclical dependency check
         visitedNodes.push(node);
 
+        // get property value that's merged
         const localProperty = node[mergeProperty];
+
         const nextNode = node[linkName];
 
-        // found a cyclical dependency, exit
+        // check for cyclical dependency, then exit early
         if (visitedNodes.includes(nextNode)) {
             return localProperty;
         }
 
+        // check if linked node exists, then go deeper
         return nextNode ? mergeFunction(recursion(nextNode, visitedNodes), localProperty) : localProperty;
     }
 
@@ -124,8 +122,8 @@ export function walkChainIdCall<U extends unknown>({
     nodeList: NodeId[];
     linkName: string;
     idName: string;
-    callback: (node: NodeId, lastValue: U, data: Prop) => U;
-    data?: Prop
+    callback: (node: NodeId, lastValue: U, data: unknown) => U;
+    data?: unknown;
 }): U {
     function recursion(node, lastValue, visitedNodes, data) {
         visitedNodes.push(node);
@@ -133,7 +131,7 @@ export function walkChainIdCall<U extends unknown>({
         const returnValue = callback(node, lastValue, data);
 
         // otherwise find() will return the next node without an idName
-        if (node[linkName] == undefined) {
+        if (node[linkName] === undefined) {
             return returnValue;
         }
 
@@ -163,6 +161,7 @@ export function walkChainIdCall<U extends unknown>({
  * @returns copy of the merged property, doesn't mutate nodes
  * Note: the value of `idName` of nodes in the `nodeList` is assumed to be unique.
  */
+// todo: make tail call recursive
 export function walkChainIdMerge({
     startNode,
     nodeList,
@@ -176,26 +175,30 @@ export function walkChainIdMerge({
     linkName: string;
     idName: string;
     mergeProperty: string;
-    mergeFunction: (nodeOne: Prop, nodeTwo: Prop) => Prop;
-}): Prop {
+    mergeFunction: (nodeOne: unknown, nodeTwo: unknown) => unknown;
+}): unknown {
     function recursion(node, visitedNodes) {
+        // record visited node for cyclical dependency check
         visitedNodes.push(node);
 
+        // get property value that's merged
         const localProperty = node[mergeProperty];
 
+        // check if node has a linked node
         // otherwise find() will return the next node without an idName
-        if (node[linkName] == undefined) {
+        if (node[linkName] === undefined) {
             return localProperty;
         }
 
         // can choose first match because value of idName of nodes in nodeList is unique
-        const nextNode = nodeList.find(nd => nd[idName] == node[linkName]);
+        const nextNode: NodeIdMerge | undefined = nodeList.find(nd => nd[idName] == node[linkName]);
 
-        // found a cyclical dependency, exit
+        // check for cyclical dependency, then exit early
         if (visitedNodes.includes(nextNode)) {
             return localProperty;
         }
 
+        // check if linked node exists, then go deeper
         return nextNode ? mergeFunction(recursion(nextNode, visitedNodes), localProperty) : localProperty;
     }
 
