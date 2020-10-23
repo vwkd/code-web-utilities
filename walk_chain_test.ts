@@ -1,4 +1,4 @@
-import { walkChainCall, walkChainMerge, walkChainIdCall, walkChainIdMerge } from "./walk_chain.ts";
+import { walkChainCallSync, walkChainMerge, walkChainIdCallSync, walkChainIdMerge } from "./walk_chain.ts";
 import { shallowMerge } from "./shallow_merge.ts";
 import { deepMerge } from "./deep_merge.ts";
 import { assertEquals } from "https://deno.land/std@0.74.0/testing/asserts.ts";
@@ -39,11 +39,11 @@ Deno.test("walk chain by link", () => {
 
     const arrows = (node, lastValue) => `${node.name}${lastValue ? ` <- ${lastValue}` : ""}`;
 
-    assertEquals(walkChainCall({ startNode: a1, linkName: "parent", callback: arrows }), "a1");
-    assertEquals(walkChainCall({ startNode: b1, linkName: "parent", callback: arrows }), "a1 <- b1");
-    assertEquals(walkChainCall({ startNode: b2, linkName: "parent", callback: arrows }), "a1 <- b2");
-    assertEquals(walkChainCall({ startNode: c1, linkName: "parent", callback: arrows }), "a1 <- b1 <- c1");
-    assertEquals(walkChainCall({ startNode: c2, linkName: "parent", callback: arrows }), "a1 <- b1 <- c2");
+    assertEquals(walkChainCallSync({ startNode: a1, linkName: "parent", callback: arrows }), "a1");
+    assertEquals(walkChainCallSync({ startNode: b1, linkName: "parent", callback: arrows }), "a1 <- b1");
+    assertEquals(walkChainCallSync({ startNode: b2, linkName: "parent", callback: arrows }), "a1 <- b2");
+    assertEquals(walkChainCallSync({ startNode: c1, linkName: "parent", callback: arrows }), "a1 <- b1 <- c1");
+    assertEquals(walkChainCallSync({ startNode: c2, linkName: "parent", callback: arrows }), "a1 <- b1 <- c2");
 });
 
 Deno.test("walk chain by link cyclic", () => {
@@ -60,7 +60,7 @@ Deno.test("walk chain by link cyclic", () => {
 
     const arrows = (node, lastValue) => `${node.name}${lastValue ? ` <- ${lastValue}` : ""}`;
 
-    assertEquals(walkChainCall({ startNode: b1, linkName: "parent", callback: arrows }), "a1 <- b1");
+    assertEquals(walkChainCallSync({ startNode: b1, linkName: "parent", callback: arrows }), "a1 <- b1");
 });
 
 Deno.test("merge properties by link", () => {
@@ -214,7 +214,7 @@ Deno.test("walk chain by id", () => {
     const arrows = (node, lastValue) => `${node.name}${lastValue ? ` <- ${lastValue}` : ""}`;
 
     assertEquals(
-        walkChainIdCall({
+        walkChainIdCallSync({
             startNode: a1,
             nodeList: [a1, b1, b2, c1, c2],
             linkName: "parent",
@@ -224,7 +224,7 @@ Deno.test("walk chain by id", () => {
         "a1"
     );
     assertEquals(
-        walkChainIdCall({
+        walkChainIdCallSync({
             startNode: b1,
             nodeList: [a1, b1, b2, c1, c2],
             linkName: "parent",
@@ -234,7 +234,7 @@ Deno.test("walk chain by id", () => {
         "a1 <- b1"
     );
     assertEquals(
-        walkChainIdCall({
+        walkChainIdCallSync({
             startNode: b2,
             nodeList: [a1, b1, b2, c1, c2],
             linkName: "parent",
@@ -244,7 +244,7 @@ Deno.test("walk chain by id", () => {
         "a1 <- b2"
     );
     assertEquals(
-        walkChainIdCall({
+        walkChainIdCallSync({
             startNode: c1,
             nodeList: [a1, b1, b2, c1, c2],
             linkName: "parent",
@@ -254,7 +254,7 @@ Deno.test("walk chain by id", () => {
         "a1 <- b1 <- c1"
     );
     assertEquals(
-        walkChainIdCall({
+        walkChainIdCallSync({
             startNode: c2,
             nodeList: [a1, b1, b2, c1, c2],
             linkName: "parent",
@@ -279,7 +279,7 @@ Deno.test("walk chain by id cyclic", () => {
     const arrows = (node, lastValue) => `${node.name}${lastValue ? ` <- ${lastValue}` : ""}`;
 
     assertEquals(
-        walkChainIdCall({
+        walkChainIdCallSync({
             startNode: b1,
             nodeList: [a1, b1],
             linkName: "parent",

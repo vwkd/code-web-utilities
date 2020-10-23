@@ -29,7 +29,7 @@ type NodeIdMerge = {
  * @param data optional argument passed through to every callback function
  * @returns return value of last callback
  */
-export function walkChainCall<U extends unknown>({
+export function walkChainCallSync<U extends unknown>({
     startNode,
     linkName,
     callback,
@@ -41,17 +41,56 @@ export function walkChainCall<U extends unknown>({
     data?: unknown;
 }): U {
     function recursion(node, lastValue, visitedNodes, data) {
+        // record visited node for cyclical dependency check
         visitedNodes.push(node);
 
         const returnValue = callback(node, lastValue, data);
         const nextNode = node[linkName];
 
-        // found a cyclical dependency, exit
+        // check for cyclical dependency, then exit early
         if (visitedNodes.includes(nextNode)) {
             return returnValue;
         }
 
-        return nextNode ? recursion(nextNode, returnValue, visitedNodes, data) : returnValue;
+        // check if linked node exists, then go deeper
+        if (nextNode === undefined) {
+            return returnValue;
+        } else {
+            return recursion(nextNode, returnValue, visitedNodes, data);
+        }
+    }
+    return recursion(startNode, undefined, [], data);
+}
+
+export async function walkChainCall<U extends unknown>({
+    startNode,
+    linkName,
+    callback,
+    data
+}: {
+    startNode: Node;
+    linkName: string;
+    callback: (node: Node, lastValue: U, data: unknown) => U;
+    data?: unknown;
+}): Promise<U> {
+    async function recursion(node, lastValue, visitedNodes, data) {
+        // record visited node for cyclical dependency check
+        visitedNodes.push(node);
+
+        const returnValue = await callback(node, lastValue, data);
+        const nextNode = node[linkName];
+
+        // check for cyclical dependency, then exit early
+        if (visitedNodes.includes(nextNode)) {
+            return returnValue;
+        }
+
+        // check if linked node exists, then go deeper
+        if (nextNode === undefined) {
+            return returnValue;
+        } else {
+            return await recursion(nextNode, returnValue, visitedNodes, data);
+        }
     }
     return recursion(startNode, undefined, [], data);
 }
@@ -92,7 +131,11 @@ export function walkChainMerge({
         }
 
         // check if linked node exists, then go deeper
-        return nextNode ? mergeFunction(recursion(nextNode, visitedNodes), localProperty) : localProperty;
+        if (nextNode === undefined) {
+            return localProperty;
+        } else {
+            mergeFunction(recursion(nextNode, visitedNodes), localProperty);
+        }
     }
 
     return recursion(startNode, []);
@@ -110,7 +153,7 @@ export function walkChainMerge({
  * @returns return value of last callback
  * Note: the value of `idName` of nodes in the `nodeList` is assumed to be unique.
  */
-export function walkChainIdCall<U extends unknown>({
+export function walkChainIdCallSync<U extends unknown>({
     startNode,
     nodeList,
     linkName,
@@ -126,10 +169,12 @@ export function walkChainIdCall<U extends unknown>({
     data?: unknown;
 }): U {
     function recursion(node, lastValue, visitedNodes, data) {
+        // record visited node for cyclical dependency check
         visitedNodes.push(node);
 
         const returnValue = callback(node, lastValue, data);
 
+        // check if node has a linked node
         // otherwise find() will return the next node without an idName
         if (node[linkName] === undefined) {
             return returnValue;
@@ -138,15 +183,66 @@ export function walkChainIdCall<U extends unknown>({
         // can choose first match because value of idName of nodes in nodeList is unique
         const nextNode = nodeList.find(nd => nd[idName] == node[linkName]);
 
-        // found a cyclical dependency, exit
+        // check for cyclical dependency, then exit early
         if (visitedNodes.includes(nextNode)) {
             return returnValue;
         }
 
-        return nextNode ? recursion(nextNode, returnValue, visitedNodes, data) : returnValue;
+        // check if linked node exists, then go deeper
+        if (nextNode === undefined) {
+            return returnValue;
+        } else {
+            return recursion(nextNode, returnValue, visitedNodes, data);
+        }
     }
 
     return recursion(startNode, undefined, [], data);
+}
+
+export async function walkChainIdCall<U extends unknown>({
+    startNode,
+    nodeList,
+    linkName,
+    idName,
+    callback,
+    data
+}: {
+    startNode: NodeId;
+    nodeList: NodeId[];
+    linkName: string;
+    idName: string;
+    callback: (node: NodeId, lastValue: U, data: unknown) => U;
+    data?: unknown;
+}): Promise<U> {
+    async function recursion(node, lastValue, visitedNodes, data) {
+        // record visited node for cyclical dependency check
+        visitedNodes.push(node);
+
+        const returnValue = await callback(node, lastValue, data);
+
+        // check if node has a linked node
+        // otherwise find() will return the next node without an idName
+        if (node[linkName] === undefined) {
+            return returnValue;
+        }
+
+        // can choose first match because value of idName of nodes in nodeList is unique
+        const nextNode = nodeList.find(nd => nd[idName] == node[linkName]);
+
+        // check for cyclical dependency, then exit early
+        if (visitedNodes.includes(nextNode)) {
+            return returnValue;
+        }
+
+        // check if linked node exists, then go deeper
+        if (nextNode === undefined) {
+            return returnValue;
+        } else {
+            return recursion(nextNode, returnValue, visitedNodes, data);
+        }
+    }
+
+    return await recursion(startNode, undefined, [], data);
 }
 
 /**
@@ -199,7 +295,11 @@ export function walkChainIdMerge({
         }
 
         // check if linked node exists, then go deeper
-        return nextNode ? mergeFunction(recursion(nextNode, visitedNodes), localProperty) : localProperty;
+        if (nextNode === undefined) {
+            return localProperty;
+        } else {
+            return mergeFunction(recursion(nextNode, visitedNodes), localProperty);
+        }
     }
 
     return recursion(startNode, []);
