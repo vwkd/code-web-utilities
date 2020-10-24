@@ -23,6 +23,7 @@ type NodeIdMerge = {
 /**
  * Walks along chain of linked nodes.
  * For each node executes a callback function.
+ * Stops at node which doesn't have another linked node.
  * @param startNode node from which to start walking
  * @param linkName property name that contains the linked node
  * @param callback function executed for each node, is passed the current node, the return value of the previous callback, and the data argument
@@ -47,15 +48,18 @@ export function walkChainCallSync<U extends unknown>({
         const returnValue = callback(node, lastValue, data);
         const nextNode = node[linkName];
 
-        // check for cyclical dependency, then exit early
+        // has cyclical dependency, stop here
         if (visitedNodes.includes(nextNode)) {
             return returnValue;
         }
 
-        // check if linked node exists, then go deeper
+        // linked node doesn't exists, stop here
         if (nextNode === undefined) {
             return returnValue;
-        } else {
+        }
+        
+        // linked node exists, go deeper
+        else {
             return recursion(nextNode, returnValue, visitedNodes, data);
         }
     }
@@ -80,15 +84,18 @@ export async function walkChainCall<U extends unknown>({
         const returnValue = await callback(node, lastValue, data);
         const nextNode = node[linkName];
 
-        // check for cyclical dependency, then exit early
+        // has cyclical dependency, stop here
         if (visitedNodes.includes(nextNode)) {
             return returnValue;
         }
 
-        // check if linked node exists, then go deeper
+        // linked node doesn't exists, stop here
         if (nextNode === undefined) {
             return returnValue;
-        } else {
+        }
+        
+        // linked node exists, go deeper
+        else {
             return await recursion(nextNode, returnValue, visitedNodes, data);
         }
     }
@@ -98,6 +105,8 @@ export async function walkChainCall<U extends unknown>({
 /**
  * Walks along chain of linked nodes.
  * Merges the specified property over all linked nodes, earlier from start node overwrite later towards root node.
+ * Stops at node which doesn't have another linked node.
+ * Doesn't merge in property if undefined.
  * @param startNode node from which to start walking
  * @param linkName property name that contains the linked node
  * @param mergeProperty property name that is merged
@@ -120,21 +129,31 @@ export function walkChainMerge({
         // record visited node for cyclical dependency check
         visitedNodes.push(node);
 
-        // get property value that's merged
+        // get local data that's merged
+        // may be undefined, check later
         const localProperty = node[mergeProperty];
 
         const nextNode = node[linkName];
 
-        // check for cyclical dependency, then exit early
+        // has cyclical dependency, stop here
         if (visitedNodes.includes(nextNode)) {
             return localProperty;
         }
 
-        // check if linked node exists, then go deeper
+        // linked node doesn't exists, stop here
+        // doesn't matter if localProperty is undefined because as left-most value in mergeFunction() gets merged away
         if (nextNode === undefined) {
             return localProperty;
-        } else {
-            mergeFunction(recursion(nextNode, visitedNodes), localProperty);
+        }
+        
+        // linked node exists, go deeper
+        else {
+            // ignore local data if undefined
+            if (localProperty === undefined) {
+                return recursion(nextNode, visitedNodes);
+            } else {
+                return mergeFunction(recursion(nextNode, visitedNodes), localProperty);
+            }
         }
     }
 
@@ -144,6 +163,7 @@ export function walkChainMerge({
 /**
  * Walks along chain of linked nodes.
  * For each node executes a callback function.
+ * Stops at node which doesn't have another linked node or whose linked node doesn't exist.
  * @param startNode node from which to start walking
  * @param nodeList list in which to search for the linked node
  * @param linkName property name that contains ID of linked node
@@ -174,8 +194,8 @@ export function walkChainIdCallSync<U extends unknown>({
 
         const returnValue = callback(node, lastValue, data);
 
-        // check if node has a linked node
-        // otherwise find() will return the next node without an idName
+        // node doesn't have linked node, stop here
+        // (otherwise find() will return the next node without an idName)
         if (node[linkName] === undefined) {
             return returnValue;
         }
@@ -183,15 +203,18 @@ export function walkChainIdCallSync<U extends unknown>({
         // can choose first match because value of idName of nodes in nodeList is unique
         const nextNode = nodeList.find(nd => nd[idName] == node[linkName]);
 
-        // check for cyclical dependency, then exit early
+        // has cyclical dependency, stop here
         if (visitedNodes.includes(nextNode)) {
             return returnValue;
         }
 
-        // check if linked node exists, then go deeper
+        // linked node doesn't exists, stop here
         if (nextNode === undefined) {
             return returnValue;
-        } else {
+        }
+        
+        // linked node exists, go deeper
+        else {
             return recursion(nextNode, returnValue, visitedNodes, data);
         }
     }
@@ -220,8 +243,8 @@ export async function walkChainIdCall<U extends unknown>({
 
         const returnValue = await callback(node, lastValue, data);
 
-        // check if node has a linked node
-        // otherwise find() will return the next node without an idName
+        // node doesn't have linked node, stop here
+        // (otherwise find() will return the next node without an idName)
         if (node[linkName] === undefined) {
             return returnValue;
         }
@@ -229,15 +252,18 @@ export async function walkChainIdCall<U extends unknown>({
         // can choose first match because value of idName of nodes in nodeList is unique
         const nextNode = nodeList.find(nd => nd[idName] == node[linkName]);
 
-        // check for cyclical dependency, then exit early
+        // has cyclical dependency, stop here
         if (visitedNodes.includes(nextNode)) {
             return returnValue;
         }
 
-        // check if linked node exists, then go deeper
+        // linked node doesn't exists, stop here
         if (nextNode === undefined) {
             return returnValue;
-        } else {
+        }
+        
+        // linked node exists, go deeper
+        else {
             return recursion(nextNode, returnValue, visitedNodes, data);
         }
     }
@@ -248,6 +274,8 @@ export async function walkChainIdCall<U extends unknown>({
 /**
  * Walks along chain of linked nodes.
  * Merges the specified property over all linked nodes, earlier from start node overwrite later towards root node.
+ * Stops at node which doesn't have another linked node or whose linked node doesn't exist.
+ * Doesn't merge in property if undefined.
  * @param startNode node from which to start walking
  * @param nodeList list in which to search for the linked node
  * @param linkName property name that contains ID of linked node
@@ -277,11 +305,13 @@ export function walkChainIdMerge({
         // record visited node for cyclical dependency check
         visitedNodes.push(node);
 
-        // get property value that's merged
+        // get local data that's merged
+        // may be undefined, check later
         const localProperty = node[mergeProperty];
 
-        // check if node has a linked node
-        // otherwise find() will return the next node without an idName
+        // node doesn't have linked node, stop here
+        // (otherwise find() will return the next node without an idName)
+        // doesn't matter if localProperty is undefined because as left-most value in mergeFunction() gets merged away
         if (node[linkName] === undefined) {
             return localProperty;
         }
@@ -289,16 +319,25 @@ export function walkChainIdMerge({
         // can choose first match because value of idName of nodes in nodeList is unique
         const nextNode: NodeIdMerge | undefined = nodeList.find(nd => nd[idName] == node[linkName]);
 
-        // check for cyclical dependency, then exit early
+        // has cyclical dependency, stop here
         if (visitedNodes.includes(nextNode)) {
             return localProperty;
         }
 
-        // check if linked node exists, then go deeper
+        // linked node doesn't exists, stop here
+        // doesn't matter if localProperty is undefined because as left-most value in mergeFunction() gets merged away
         if (nextNode === undefined) {
             return localProperty;
-        } else {
-            return mergeFunction(recursion(nextNode, visitedNodes), localProperty);
+        }
+
+        // linked node exists, go deeper
+        else {
+            // ignore local data if undefined
+            if (localProperty === undefined) {
+                return recursion(nextNode, visitedNodes);
+            } else {
+                return mergeFunction(recursion(nextNode, visitedNodes), localProperty);
+            }
         }
     }
 
