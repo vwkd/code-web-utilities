@@ -41,7 +41,7 @@ export function walkChainCallSync<U extends unknown>({
     callback: (node: Node, lastValue: U, data: unknown) => U;
     data?: unknown;
 }): U {
-    function recursion(node, lastValue, visitedNodes, data) {
+    function recursion(node: Node, lastValue: U, visitedNodes: Node[], data: unknown) {
         // record visited node for cyclical dependency check
         visitedNodes.push(node);
 
@@ -74,10 +74,10 @@ export async function walkChainCall<U extends unknown>({
 }: {
     startNode: Node;
     linkName: string;
-    callback: (node: Node, lastValue: U, data: unknown) => U;
+    callback: (node: Node, lastValue: U, data: unknown) => Promise<U>;
     data?: unknown;
 }): Promise<U> {
-    async function recursion(node, lastValue, visitedNodes, data) {
+    async function recursion(node: Node, lastValue: U, visitedNodes: Node[], data: unknown) {
         // record visited node for cyclical dependency check
         visitedNodes.push(node);
 
@@ -125,7 +125,7 @@ export function walkChainMerge({
     mergeProperty: string;
     mergeFunction: (nodeOne: unknown, nodeTwo: unknown) => unknown;
 }): unknown {
-    function recursion(node, visitedNodes) {
+    function recursion(node: NodeMerge, visitedNodes: NodeMerge[]) {
         // record visited node for cyclical dependency check
         visitedNodes.push(node);
 
@@ -188,7 +188,7 @@ export function walkChainIdCallSync<U extends unknown>({
     callback: (node: NodeId, lastValue: U, data: unknown) => U;
     data?: unknown;
 }): U {
-    function recursion(node, lastValue, visitedNodes, data) {
+    function recursion(node: NodeId, lastValue: U, visitedNodes: NodeId[], data: unknown) {
         // record visited node for cyclical dependency check
         visitedNodes.push(node);
 
@@ -234,10 +234,10 @@ export async function walkChainIdCall<U extends unknown>({
     nodeList: NodeId[];
     linkName: string;
     idName: string;
-    callback: (node: NodeId, lastValue: U, data: unknown) => U;
+    callback: (node: NodeId, lastValue: U, data: unknown) => Promise<U>;
     data?: unknown;
 }): Promise<U> {
-    async function recursion(node, lastValue, visitedNodes, data) {
+    async function recursion(node: NodeId, lastValue: U, visitedNodes: NodeId[], data: unknown) {
         // record visited node for cyclical dependency check
         visitedNodes.push(node);
 
@@ -301,7 +301,7 @@ export function walkChainIdMerge({
     mergeProperty: string;
     mergeFunction: (nodeOne: unknown, nodeTwo: unknown) => unknown;
 }): unknown {
-    function recursion(node, visitedNodes) {
+    function recursion(node: NodeIdMerge, visitedNodes: NodeIdMerge[]) {
         // record visited node for cyclical dependency check
         visitedNodes.push(node);
 
