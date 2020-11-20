@@ -1,24 +1,4 @@
-// ToDo: computed property name in TypeScript? Because linkName, mergeProperty, idName aren't correct, actual value is only known at runtime... Probably not possible?!
-
-type Node = {
-    linkName: Node;
-};
-
-type NodeMerge = {
-    linkName: NodeMerge;
-    mergeProperty: unknown;
-};
-
-type NodeId = {
-    linkName: string;
-    idName: string;
-};
-
-type NodeIdMerge = {
-    linkName: string;
-    idName: string;
-    mergeProperty: unknown;
-};
+// ToDo: Improve types
 
 /**
  * Walks along chain of linked nodes.
@@ -30,18 +10,18 @@ type NodeIdMerge = {
  * @param data optional argument passed through to every callback function
  * @returns return value of last callback
  */
-export function walkChainCallSync<U extends unknown>({
+export function walkChainCallSync<Key extends string, Node extends Record<Key, Node>, U extends unknown>({
     startNode,
     linkName,
     callback,
     data
 }: {
     startNode: Node;
-    linkName: string;
-    callback: (node: Node, lastValue: U, data: unknown) => U;
+    linkName: Key;
+    callback: (node: Node, lastValue: U, data?: unknown) => U;
     data?: unknown;
 }): U {
-    function recursion(node: Node, lastValue: U, visitedNodes: Node[], data: unknown) {
+    function recursion(node: Node, lastValue: U, visitedNodes: Node[], data?: unknown): U {
         // record visited node for cyclical dependency check
         visitedNodes.push(node);
 
@@ -57,7 +37,7 @@ export function walkChainCallSync<U extends unknown>({
         if (nextNode === undefined) {
             return returnValue;
         }
-        
+
         // linked node exists, go deeper
         else {
             return recursion(nextNode, returnValue, visitedNodes, data);
@@ -66,18 +46,18 @@ export function walkChainCallSync<U extends unknown>({
     return recursion(startNode, undefined, [], data);
 }
 
-export async function walkChainCall<U extends unknown>({
+export async function walkChainCall<Key extends string, Node extends Record<Key, Node>, U extends unknown>({
     startNode,
     linkName,
     callback,
     data
 }: {
     startNode: Node;
-    linkName: string;
-    callback: (node: Node, lastValue: U, data: unknown) => Promise<U>;
+    linkName: Key;
+    callback: (node: Node, lastValue: U, data?: unknown) => Promise<U>;
     data?: unknown;
 }): Promise<U> {
-    async function recursion(node: Node, lastValue: U, visitedNodes: Node[], data: unknown) {
+    async function recursion(node: Node, lastValue: U, visitedNodes: Node[], data?: unknown): Promise<U> {
         // record visited node for cyclical dependency check
         visitedNodes.push(node);
 
@@ -93,7 +73,7 @@ export async function walkChainCall<U extends unknown>({
         if (nextNode === undefined) {
             return returnValue;
         }
-        
+
         // linked node exists, go deeper
         else {
             return await recursion(nextNode, returnValue, visitedNodes, data);
@@ -114,18 +94,19 @@ export async function walkChainCall<U extends unknown>({
  * @returns copy of the merged property, doesn't mutate nodes
  */
 // todo: make tail call recursive
-export function walkChainMerge({
+// todo: type better, remove unknown
+export function walkChainMerge<Key extends string, Key2 extends string, Node extends Record<Key, Node> & Record<Key2, unknown>>({
     startNode,
     linkName,
     mergeProperty,
     mergeFunction
 }: {
-    startNode: NodeMerge;
-    linkName: string;
-    mergeProperty: string;
+    startNode: Node;
+    linkName: Key;
+    mergeProperty: Key2;
     mergeFunction: (nodeOne: unknown, nodeTwo: unknown) => unknown;
 }): unknown {
-    function recursion(node: NodeMerge, visitedNodes: NodeMerge[]) {
+    function recursion(node: Node, visitedNodes: Node[]) {
         // record visited node for cyclical dependency check
         visitedNodes.push(node);
 
@@ -145,7 +126,7 @@ export function walkChainMerge({
         if (nextNode === undefined) {
             return localProperty;
         }
-        
+
         // linked node exists, go deeper
         else {
             // ignore local data if undefined
@@ -173,7 +154,7 @@ export function walkChainMerge({
  * @returns return value of last callback
  * Note: the value of `idName` of nodes in the `nodeList` is assumed to be unique.
  */
-export function walkChainIdCallSync<U extends unknown>({
+export function walkChainIdCallSync<Key extends string, Key2 extends string, Node extends Record<Key | Key2, string>, U extends unknown>({
     startNode,
     nodeList,
     linkName,
@@ -181,14 +162,14 @@ export function walkChainIdCallSync<U extends unknown>({
     callback,
     data
 }: {
-    startNode: NodeId;
-    nodeList: NodeId[];
-    linkName: string;
-    idName: string;
-    callback: (node: NodeId, lastValue: U, data: unknown) => U;
+    startNode: Node;
+    nodeList: Node[];
+    linkName: Key;
+    idName: Key2;
+    callback: (node: Node, lastValue: U, data?: unknown) => U;
     data?: unknown;
 }): U {
-    function recursion(node: NodeId, lastValue: U, visitedNodes: NodeId[], data: unknown) {
+    function recursion(node: Node, lastValue: U, visitedNodes: Node[], data?: unknown): U {
         // record visited node for cyclical dependency check
         visitedNodes.push(node);
 
@@ -196,12 +177,13 @@ export function walkChainIdCallSync<U extends unknown>({
 
         // node doesn't have linked node, stop here
         // (otherwise find() will return the next node without an idName)
-        if (node[linkName] === undefined) {
+        const linkId = node[linkName];
+        if (linkId === undefined) {
             return returnValue;
         }
 
         // can choose first match because value of idName of nodes in nodeList is unique
-        const nextNode = nodeList.find(nd => nd[idName] == node[linkName]);
+        const nextNode: Node | undefined = nodeList.find(nd => nd[idName] == linkId);
 
         // has cyclical dependency, stop here
         if (visitedNodes.includes(nextNode)) {
@@ -212,7 +194,7 @@ export function walkChainIdCallSync<U extends unknown>({
         if (nextNode === undefined) {
             return returnValue;
         }
-        
+
         // linked node exists, go deeper
         else {
             return recursion(nextNode, returnValue, visitedNodes, data);
@@ -222,7 +204,7 @@ export function walkChainIdCallSync<U extends unknown>({
     return recursion(startNode, undefined, [], data);
 }
 
-export async function walkChainIdCall<U extends unknown>({
+export async function walkChainIdCall<Key extends string, Key2 extends string, Node extends Record<Key | Key2, string>, U extends unknown>({
     startNode,
     nodeList,
     linkName,
@@ -230,14 +212,14 @@ export async function walkChainIdCall<U extends unknown>({
     callback,
     data
 }: {
-    startNode: NodeId;
-    nodeList: NodeId[];
-    linkName: string;
-    idName: string;
-    callback: (node: NodeId, lastValue: U, data: unknown) => Promise<U>;
+    startNode: Node;
+    nodeList: Node[];
+    linkName: Key;
+    idName: Key2;
+    callback: (node: Node, lastValue: U, data?: unknown) => Promise<U>;
     data?: unknown;
 }): Promise<U> {
-    async function recursion(node: NodeId, lastValue: U, visitedNodes: NodeId[], data: unknown) {
+    async function recursion(node: Node, lastValue: U, visitedNodes: Node[], data?: unknown): Promise<U> {
         // record visited node for cyclical dependency check
         visitedNodes.push(node);
 
@@ -245,12 +227,13 @@ export async function walkChainIdCall<U extends unknown>({
 
         // node doesn't have linked node, stop here
         // (otherwise find() will return the next node without an idName)
-        if (node[linkName] === undefined) {
+        const linkId = node[linkName];
+        if (linkId === undefined) {
             return returnValue;
         }
 
         // can choose first match because value of idName of nodes in nodeList is unique
-        const nextNode = nodeList.find(nd => nd[idName] == node[linkName]);
+        const nextNode: Node | undefined = nodeList.find(nd => nd[idName] == linkId);
 
         // has cyclical dependency, stop here
         if (visitedNodes.includes(nextNode)) {
@@ -261,7 +244,7 @@ export async function walkChainIdCall<U extends unknown>({
         if (nextNode === undefined) {
             return returnValue;
         }
-        
+
         // linked node exists, go deeper
         else {
             return recursion(nextNode, returnValue, visitedNodes, data);
@@ -286,7 +269,8 @@ export async function walkChainIdCall<U extends unknown>({
  * Note: the value of `idName` of nodes in the `nodeList` is assumed to be unique.
  */
 // todo: make tail call recursive
-export function walkChainIdMerge({
+// todo: type better, remove unknown
+export function walkChainIdMerge<Key extends string, Key2 extends string, Key3 extends string, Node extends Record<Key | Key2, string> & Record<Key3, unknown>>({
     startNode,
     nodeList,
     linkName,
@@ -294,14 +278,14 @@ export function walkChainIdMerge({
     mergeProperty,
     mergeFunction
 }: {
-    startNode: NodeIdMerge;
-    nodeList: NodeIdMerge[];
-    linkName: string;
-    idName: string;
-    mergeProperty: string;
+    startNode: Node;
+    nodeList: Node[];
+    linkName: Key;
+    idName: Key2;
+    mergeProperty: Key3;
     mergeFunction: (nodeOne: unknown, nodeTwo: unknown) => unknown;
 }): unknown {
-    function recursion(node: NodeIdMerge, visitedNodes: NodeIdMerge[]) {
+    function recursion(node: Node, visitedNodes: Node[]): unknown {
         // record visited node for cyclical dependency check
         visitedNodes.push(node);
 
@@ -312,12 +296,13 @@ export function walkChainIdMerge({
         // node doesn't have linked node, stop here
         // (otherwise find() will return the next node without an idName)
         // doesn't matter if localProperty is undefined because as left-most value in mergeFunction() gets merged away
-        if (node[linkName] === undefined) {
+        const linkId = node[linkName];
+        if (linkId === undefined) {
             return localProperty;
         }
 
         // can choose first match because value of idName of nodes in nodeList is unique
-        const nextNode: NodeIdMerge | undefined = nodeList.find(nd => nd[idName] == node[linkName]);
+        const nextNode: Node | undefined = nodeList.find(nd => nd[idName] == linkId);
 
         // has cyclical dependency, stop here
         if (visitedNodes.includes(nextNode)) {
