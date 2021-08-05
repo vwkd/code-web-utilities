@@ -1,3 +1,3 @@
 # README
 
-Some JavaScript utilities. Written in TypeScript for Deno.
+Some JavaScript and TypeScript utilities. Tests use Deno.

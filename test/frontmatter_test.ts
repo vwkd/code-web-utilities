@@ -1,4 +1,4 @@
-import { parse } from "./frontmatter.ts";
+import { parse } from "../src/frontmatter.ts";
 import { parse as yaml } from "https://deno.land/std@0.74.0/encoding/yaml.ts";
 import { assertEquals } from "https://deno.land/std@0.74.0/testing/asserts.ts";
 

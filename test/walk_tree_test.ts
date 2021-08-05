@@ -1,4 +1,4 @@
-import { walkTreeCall, walkTreeLeafCall, walkTreeCompare } from "./walk_tree.ts";
+import { walkTreeCall, walkTreeLeafCall, walkTreeCompare } from "../src/walk_tree.ts";
 import { assertEquals } from "https://deno.land/std@0.74.0/testing/asserts.ts";
 
 Deno.test("walk tree", () => {

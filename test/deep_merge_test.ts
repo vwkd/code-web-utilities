@@ -1,4 +1,4 @@
-import { deepMerge, deepMergeArr } from "./deep_merge.ts";
+import { deepMerge, deepMergeArr } from "../src/deep_merge.ts";
 import { assertEquals } from "https://deno.land/std@0.74.0/testing/asserts.ts";
 
 // unlike shallowMerge
