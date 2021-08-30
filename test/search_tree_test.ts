@@ -1,5 +1,5 @@
 import { searchTree } from "../src/search_tree.ts";
-import { assertEquals } from "https://deno.land/std/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.103.0/testing/asserts.ts";
 
 Deno.test("search tree", () => {
   const t1 = {
