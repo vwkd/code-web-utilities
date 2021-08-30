@@ -18,3 +18,12 @@ Deno.test("set nested object", () => {
 
   assertEquals(obj, { a: { ab: { abc: 42 } } })
 });
+
+Deno.test("set nested object force", () => {
+
+  const obj = {};
+
+  set(obj, ["a", "ab", "abc"], 42, true);
+
+  assertEquals(obj, { a: { ab: { abc: 42 } } })
+});

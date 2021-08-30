@@ -3,7 +3,7 @@
  * key can be an array of strings or a string
  * can specify separator for string, e.g. "name.first"
 */
-export function get(object: object, key: string[] | string, separator: string = "."): unknown {
+export function get(object: object, key: string[] | string, separator = "."): unknown {
   const [head, ...rest] = Array.isArray(key) ? key : key.split(separator);
 
   if (rest.length) {
@@ -19,11 +19,14 @@ export function get(object: object, key: string[] | string, separator: string = 
  * can specify separator for string, e.g. "name.first"
  * Beware: parent properties must exist!
 */
-export function set(object: object, key: string[] | string, value: unknown, separator: string = "."): void {
+export function set(object: object, key: string[] | string, value: unknown, force = false, separator = "."): void {
   const [head, ...rest] = Array.isArray(key) ? key : key.split(separator);
 
   if (rest.length) {
-    set(object[head], rest.join("."), value);
+    if (!object[head] && force) {
+      object[head] = {}
+    }
+    set(object[head], rest.join("."), value, force);
   } else {
     object[head] = value;
   }
