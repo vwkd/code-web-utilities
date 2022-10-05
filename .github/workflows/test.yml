@@ -22,4 +22,4 @@ jobs:
           deno-version: v1.x
           
       - name: Run Deno
-        run: deno test
+        run: deno test --no-check
