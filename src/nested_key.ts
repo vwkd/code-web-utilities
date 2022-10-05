@@ -17,7 +17,7 @@ export function deepGet(object: object, key: string[] | string, separator = ".")
  * Set nested property on object
  * key can be an array of strings or a string
  * can specify separator for string, e.g. "name.first"
- * Beware: parent properties must exist!
+ * can force if parent properties don't exist
 */
 export function deepSet(object: object, key: string[] | string, value: unknown, force = false, separator = "."): void {
   const [head, ...rest] = Array.isArray(key) ? key : key.split(separator);
