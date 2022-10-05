@@ -15,7 +15,7 @@ export function deepFilter(obj, key, testFn) {
         
       return res.length != 0 ? res : undefined;
     } else {
-      const val = deepFilter(obj[head], rest, testFn);
+      const val = deepFilter(obj?.[head], rest, testFn);
 
       return val !== undefined ? { ...obj, [head]: val } : undefined;
     }

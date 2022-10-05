@@ -141,3 +141,36 @@ Deno.test("deep filter object array object array", () => {
   
   assertEquals(result, expectedResult);
 });
+
+Deno.test("deep filter different keys", () => {
+  const obj = [
+    {
+      "a": {
+        "b": ["lorem", "ipsum"],
+        "c": "dolor"
+      },
+      "d": "sit"
+    },
+    {
+      "e": ["amet", "consectetur"],
+      "f": "adipiscing"
+    }
+  ];
+  
+  const expectedResult = [
+    {
+      "a": {
+        "b": ["lorem"],
+        "c": "dolor"
+      },
+      "d": "sit"
+    }
+  ];
+  
+  const key = "a.b";
+  const value = "lorem";
+  
+  const result = deepFilter(obj, key.split("."), e => e === value);
+  
+  assertEquals(result, expectedResult);
+});
